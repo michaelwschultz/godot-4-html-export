@@ -22,40 +22,15 @@ inputs:
   godot-version:
     description: 'Godot Engine version. Supported are 4.x versions'
     required: false
-    default: '4.2'
-  os:
-    description: 'The runners OS. Linux and Windows supported'
-    required: false
-    default: 'Linux'
+    default: '4.3'
   
 runs:
   using: "composite"
   steps:
-    # - name: Check is running on Linux
-    #   if: runner.os != 'Linux'
-    #   shell: bash
-    #   run: exit 1
-
-    - name: Define OS_SUFFIX
+    - name: Check is running on Linux
+      if: runner.os != 'Linux'
       shell: bash
-      run: |
-        [[ "Linux" = ${{ inputs.os }}* ]] && echo "OS_SUFFIX=linux_headless.64" >> $GITHUB_ENV
-        [[ "Windows" = ${{ inputs.os }}* ]] && echo "OS_SUFFIX=win64.exe" >> $GITHUB_ENV
-
-    - name: Define TEMPLATE_DIR
-      shell: bash
-      run: |
-        [[ "Linux" = ${{ inputs.os }}* ]] && echo "TEMPLATE_DIR=~/.local/share/godot/export_templates/${{ inputs.godot-version }}.stable" >> $GITHUB_ENV
-        [[ "Windows" = ${{ inputs.os }}* ]] && echo "TEMPLATE_DIR=C:/Users/runneradmin/AppData/Roaming/Godot/export_templates/${{ inputs.godot-version }}.stable" >> $GITHUB_ENV
-
-    - name: Create export presets config
-      if: ${{ inputs.create-export-preset-cfg  == 'true' }}
-      shell: bash
-      run: cp D:/a/_actions/dulvui/godot-4-html-export/v0.0.2/export_presets.cfg ${{ inputs.working-directory }}/export_presets.cfg
-
-    - name: Create export paths directory structure
-      shell: bash
-      run: mkdir -p "$(dirname ${{ inputs.output-file-path }})"
+      run: exit 1
 
     # - name: Cache Godot files
     #   id: cache-godot
@@ -67,25 +42,31 @@ runs:
     #       ~/.config/godot/**
     #     key: ${{ runner.os }}-godot-${{ inputs.godot-version }}
 
-    - name: Install wget on Windows
+    - name: Create export presets config
+      if: ${{ inputs.create-export-preset-cfg  == 'true' }}
       shell: bash
-      if: runner.os == 'Windows'
-      run: choco install wget --no-progress 
+      run: cp D:/a/_actions/dulvui/godot-4-html-export/v0.0.2/export_presets.cfg ${{ inputs.working-directory }}/export_presets.cfg
 
     - name: Download and config Godot Engine linux server and templates
       shell: bash
       if: steps.cache-godot.outputs.cache-hit != 'true'
       run: |
-        wget -q https://downloads.tuxfamily.org/godotengine/${{ inputs.godot-version }}/Godot_v${{ inputs.godot-version }}-stable_${{ env.OS_SUFFIX }}.zip
-        wget -q https://downloads.tuxfamily.org/godotengine/${{ inputs.godot-version }}/Godot_v${{ inputs.godot-version }}-stable_export_templates.tpz
-        unzip Godot_v${{ inputs.godot-version }}-stable_${{ env.OS_SUFFIX }}.zip
-        unzip Godot_v${{ inputs.godot-version }}-stable_export_templates.tpz
-        mkdir -p ${{ env.TEMPLATE_DIR }}
-        mv templates/* ${{ env.TEMPLATE_DIR }}
-        rm -f Godot_v${{ inputs.godot-version }}-stable_${{ env.OS_SUFFIX }}.zip Godot_v${{ inputs.godot-version }}-stable_export_templates.tpz
-
-
+        wget -q https://downloads.tuxfamily.org/godotengine/${{ inputs.godot-version }}/rc3/Godot_v${{ inputs.godot-version }}-rc3_linux.x86_64.zip
+        wget -q https://downloads.tuxfamily.org/godotengine/${{ inputs.godot-version }}/rc3/Godot_v${{ inputs.godot-version }}-rc3_export_templates.tpz
+        mkdir ~/.cache
+        mkdir -p ~/.config/godot
+        mkdir -p ~/.local/share/godot/export_templates/${{ inputs.godot-version }}.stable
+        unzip Godot_v${{ inputs.godot-version }}-rc3_linux.x86_64.zip
+        mv Godot_v${{ inputs.godot-version }}-rc3_linux.x86_64 /usr/local/bin/godot
+        unzip Godot_v${{ inputs.godot-version }}-rc3_export_templates.tpz
+        mv templates/* ~/.local/share/godot/export_templates/${{ inputs.godot-version }}.stable
+        rm -f Godot_v${{ inputs.godot-version }}-rc3_linux.x86_64.zip Godot_v${{ inputs.godot-version }}-rc3_export_templates.tpz
+        godot --headless --editor --quit
+    
+    - name: Create export paths directory structure
+      shell: bash
+      run: mkdir -p "$(dirname ${{ inputs.output-file-path }})"
 
     - name: Export Godot project to html
       shell: bash
-      run: ./Godot_v${{ inputs.godot-version }}-stable_${{ env.OS_SUFFIX }} --headless --path ${{ inputs.working-directory }} --export-release Web ${{ inputs.output-file-path }}
+      run: godot --headless --path ${{ inputs.working-directory }} --export-release Web ${{ inputs.output-file-path }}
