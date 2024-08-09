@@ -32,15 +32,15 @@ runs:
     #   shell: bash
     #   run: exit 1
 
-    # - name: Cache Godot files
-    #   id: cache-godot
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: |
-    #       ~/.local/share/godot/**
-    #       /usr/local/bin/godot
-    #       ~/.config/godot/**
-    #     key: ${{ runner.os }}-godot-${{ inputs.godot-version }}
+    - name: Cache Godot files
+      id: cache-godot
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.local/share/godot/**
+          /usr/local/bin/godot
+          ~/.config/godot/**
+        key: ${{ runner.os }}-godot-${{ inputs.godot-version }}
 
     - name: Create export presets config
       if: ${{ inputs.create-export-preset-cfg  == 'true' }}
